@@ -41,10 +41,6 @@ module Bundler
       @definition.dependencies
     end
 
-    def resolved_dependencies
-      @definition.resolved_dependencies
-    end
-
   private
 
     def resolve_locally

@@ -76,19 +76,21 @@ module Bundler
     end
 
     def load(gemfile = default_gemfile)
-      root = Pathname.new(gemfile).dirname
-      Runtime.new root, definition(gemfile)
-    end
+      ENV["BUNDLE_GEMFILE"] = gemfile
 
-    def definition(gemfile = default_gemfile)
       configure
       root = Pathname.new(gemfile).dirname
       lockfile = root.join("Gemfile.lock")
+
       if lockfile.exist?
-        Definition.from_lock(lockfile)
+        Runtime.from_lock root, lockfile
       else
-        Definition.from_gemfile(gemfile)
+        Runtime.from_gemfile root, gemfile
       end
+    end
+
+    def definition(gemfile = default_gemfile)
+      load(gemfile).definition
     end
 
     def home

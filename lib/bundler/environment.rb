@@ -2,11 +2,16 @@ require 'erb'
 
 module Bundler
   class Environment
-    attr_reader :root
+    attr_reader :root, :definition
 
     def initialize(root, definition)
       @root = root
       @definition = definition
+      @resolved_dependencies = nil
+    end
+
+    def resolved_dependencies
+      @resolved_dependencies || dependencies
     end
 
     def index

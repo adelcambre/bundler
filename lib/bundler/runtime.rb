@@ -11,6 +11,38 @@ module Bundler
       end
     end
 
+    def self.from_gemfile(root, gemfile)
+      gemfile = Pathname.new(gemfile).expand_path
+
+      unless gemfile.file?
+        raise GemfileNotFound, "#{gemfile} not found"
+      end
+
+      new root, Dsl.evaluate(gemfile)
+    end
+
+    def self.from_lock(root, lockfile)
+      details = YAML.load_file(lockfile)
+      locked_definition = Definition.from_lock(details)
+
+      hash = Digest::SHA1.hexdigest(File.read("#{Bundler.root}/Gemfile"))
+      unless locked_definition.hash == hash
+        raise GemfileError, "You changed your Gemfile after locking. Please relock using `bundle lock`"
+      end
+
+      runtime = new(root, locked_definition)
+      runtime.resolved_dependencies_from_lockfile(details)
+      runtime
+    end
+
+    def resolved_dependencies_from_lockfile(details)
+      @resolved_dependencies = details["specs"].map do |spec|
+        name, opts = spec.keys.first, spec.values.first
+        opts["source"] = sources[opts["source"]] if opts.include?("source")
+        Bundler::Dependency.new(name, details.delete("version"), opts)
+      end
+    end
+
     def setup(*groups)
       # Has to happen first
       clean_load_path
@@ -52,10 +84,6 @@ module Bundler
 
     def dependencies
       @definition.dependencies
-    end
-
-    def resolved_dependencies
-      @definition.resolved_dependencies
     end
 
     def lock
