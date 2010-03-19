@@ -36,10 +36,8 @@ module Bundler
     end
 
     def resolved_dependencies_from_lockfile(details)
-      @resolved_dependencies = details["specs"].map do |spec|
-        name, opts = spec.keys.first, spec.values.first
-        opts["source"] = sources[opts["source"]] if opts.include?("source")
-        Bundler::Dependency.new(name, details.delete("version"), opts)
+      @resolved_dependencies = details["resolved_dependencies"].map do |dep|
+        Bundler::Dependency.new(dep.delete("name"), dep.delete("version"), dep)
       end
     end
 
@@ -139,10 +137,10 @@ module Bundler
       details["hash"] = gemfile_fingerprint
       details["sources"] = sources.map { |s| { s.class.name.split("::").last => s.options} }
 
-      details["specs"] = specs.map do |s|
-        options = {"version" => s.version.to_s}
+      details["resolved_dependencies"] = specs.map do |s|
+        options = {"version" => s.version.to_s, "name" => s.name }
         options["source"] = sources.index(s.source) if sources.include?(s.source)
-        { s.name => options }
+        options
       end
 
       details["dependencies"] = @definition.dependencies.map do |d|
